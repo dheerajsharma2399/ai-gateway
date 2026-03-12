@@ -108,3 +108,37 @@ Browser → OpenChamber (:7802) / ClaudeCodeUI (:3011)
 | Task Master MCP | ~100MB (on demand) |
 | Playwright Chromium | ~300-500MB per session |
 | **Total** | **~1.2-1.5GB** |
+
+## VPS Deployment
+
+### Prerequisites
+
+- Docker + Docker Compose on ARM64 VPS
+- Traefik reverse proxy (for domain routing)
+- Node.js (for running OpenChamber locally)
+
+### Deploy with Docker Compose
+
+```bash
+# Clone the repository
+git clone https://github.com/dheerajsharma2399/ai-gateway.git
+cd ai-gateway
+
+# Copy environment template
+cp env.example .env
+
+# Edit .env and set your passwords
+nano .env
+
+# Build and start
+docker compose build ai-gateway
+docker compose up -d ai-gateway
+
+# View logs
+docker compose logs -f ai-gateway
+```
+
+### Access
+
+- **OpenChamber UI**: http://localhost:7802
+- **ClaudeCodeUI**: http://localhost:3011
