@@ -123,6 +123,11 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
 
-OPENCHAMBER_PORT="${OPENCHAMBER_PORT:-3010}"
+# OpenChamber always runs on port 7802
+OPENCHAMBER_PORT="7802"
 OPENCODE_WORKSPACE="${OPENCODE_WORKSPACE:-/workspace}"
+
+echo "[entrypoint] OpenChamber port: ${OPENCHAMBER_PORT}"
+echo "[entrypoint] OpenCode workspace: ${OPENCODE_WORKSPACE}"
+
 exec env OPENCODE_WORKSPACE="${OPENCODE_WORKSPACE}" bun packages/web/bin/cli.js --port "${OPENCHAMBER_PORT}" ${OPENCHAMBER_ARGS}
