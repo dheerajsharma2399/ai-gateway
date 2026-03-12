@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     jq \
     git \
+    build-essential \
     openssh-client \
     python3 \
     less \
