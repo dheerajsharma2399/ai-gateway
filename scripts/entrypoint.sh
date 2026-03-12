@@ -123,6 +123,38 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
 
+# Define graceful shutdown function for ALL tools
+cleanup() {
+  echo "[entrypoint] Received stop signal. Beginning graceful shutdown of all processes..."
+
+  if [ -n "${CLAUDEUI_PID:-}" ]; then
+    echo "[entrypoint] Stopping ClaudeCodeUI (PID: $CLAUDEUI_PID)..."
+    kill -TERM "$CLAUDEUI_PID" 2>/dev/null || true
+  fi
+
+  if [ -n "${NINE_ROUTER_PID:-}" ]; then
+    echo "[entrypoint] Stopping 9router (PID: $NINE_ROUTER_PID)..."
+    kill -TERM "$NINE_ROUTER_PID" 2>/dev/null || true
+  fi
+
+  if [ -n "${OPENCHAMBER_PID:-}" ]; then
+    echo "[entrypoint] Stopping OpenChamber (PID: $OPENCHAMBER_PID)..."
+    kill -TERM "$OPENCHAMBER_PID" 2>/dev/null || true
+  fi
+
+  # Also nuke any rogue orphaned openchamber/opencode processes running under this user just in case
+  pkill -TERM -f openchamber 2>/dev/null || true
+  pkill -TERM -f opencode 2>/dev/null || true
+  pkill -TERM -f claude-code-ui 2>/dev/null || true
+  pkill -TERM -f 9router 2>/dev/null || true
+
+  echo "[entrypoint] Graceful shutdown complete."
+  exit 0
+}
+
+# Trap docker SIGTERM and Ctrl+C SIGINT
+trap cleanup SIGTERM SIGINT
+
 # OpenChamber always runs on port 7802
 OPENCHAMBER_PORT="7802"
 OPENCODE_WORKSPACE="${OPENCODE_WORKSPACE:-/workspace}"
@@ -130,4 +162,9 @@ OPENCODE_WORKSPACE="${OPENCODE_WORKSPACE:-/workspace}"
 echo "[entrypoint] OpenChamber port: ${OPENCHAMBER_PORT}"
 echo "[entrypoint] OpenCode workspace: ${OPENCODE_WORKSPACE}"
 
-exec openchamber --port "${OPENCHAMBER_PORT}" ${OPENCHAMBER_ARGS}
+# Run OpenChamber in the background so the trap can catch signals
+openchamber --port "${OPENCHAMBER_PORT}" ${OPENCHAMBER_ARGS} &
+OPENCHAMBER_PID=$!
+
+# Wait block so script doesn't exit immediately and keeps traps alive
+wait
