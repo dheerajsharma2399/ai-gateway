@@ -16,31 +16,19 @@ A self-hosted AI development environment combining **OpenCode** + **Claude Code*
 ### 1. Build
 
 ```bash
-docker build -t ai-gateway:local .
+docker compose build ai-gateway
 ```
 
 ### 2. Run
 
 ```bash
-docker run -d \
-  --name ai-gateway \
-  -p 3000:3000 \
-  -p 3001:3001 \
-  -v ai-gateway-config:/home/ai-gateway/.config \
-  -v ai-gateway-opencode:/home/ai-gateway/.local/share/opencode \
-  -v ai-gateway-state:/home/ai-gateway/.local/state \
-  -v ai-gateway-claude:/home/ai-gateway/.claude \
-  -v ai-gateway-taskmaster:/home/ai-gateway/.taskmaster \
-  -v ai-gateway-playwright:/home/ai-gateway/.cache/ms-playwright \
-  -v ai-gateway-workspaces:/home/ai-gateway/workspaces \
-  -e UI_PASSWORD=your_secure_password \
-  ai-gateway:local
+docker compose up -d ai-gateway
 ```
 
 ### 3. Access
 
-- **OpenChamber UI:** http://localhost:3000
-- **ClaudeCodeUI:** http://localhost:3001
+- **OpenChamber UI:** `https://opencode.mooh.me` (or `http://localhost:7802` from host)
+- **ClaudeCodeUI:** `https://claude.mooh.me` (or `http://localhost:3011` from host)
 
 ### 4. First-time Claude Code Auth
 
@@ -54,12 +42,17 @@ Follow the Anthropic browser auth flow. The auth persists in the volume.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `OPENCHAMBER_PORT` | OpenChamber UI port | `3000` |
-| `CLAUDEUI_PORT` | ClaudeCodeUI port | `3001` |
+| `OPENCHAMBER_DOMAIN` | OpenChamber domain for Traefik | `opencode.mooh.me` |
+| `CLAUDEUI_DOMAIN` | ClaudeCodeUI domain for Traefik | `claude.mooh.me` |
+| `OPENCHAMBER_PORT` | OpenChamber UI port | `7802` |
+| `CLAUDEUI_PORT` | ClaudeCodeUI port | `3011` |
 | `UI_PASSWORD` | OpenChamber UI password | - |
-| `CF_TUNNEL` | Enable Cloudflare Tunnel (`true`/`qr`/`password`) | - |
-| `ANTHROPIC_API_KEY` | Anthropic API key for Claude Code | - |
-| `CLAUDE_MODEL` | Claude model to use | `sonnet` |
+| `LITELLM_BASE_URL` | LiteLLM proxy URL | `http://litellm:4000` |
+| `LITELLM_MASTER_KEY` | LiteLLM master key | - |
+| `LITELLM_API_KEY` | LiteLLM API key | - |
+| `NINE_ROUTER_ENABLED` | Start 9router side service | `true` |
+| `NINE_ROUTER_PORT` | 9router local port | `20128` |
+| `OPENCODE_DEFAULT_MODEL` | Default OpenCode model | `drdash/anthropic/claude-3.5-sonnet` |
 | `PLAYWRIGHT_BROWSERS_PATH` | Browser cache path | `/home/ai-gateway/.cache/ms-playwright` |
 
 ## MCP Servers
@@ -71,7 +64,7 @@ The container includes MCP servers pre-configured. Add this to your project's `.
   "mcpServers": {
     "task-master": {
       "command": "node",
-      "args": ["/home/ai-gateway/.npm-global/lib/node_modules/claude-task-master/dist/index.js"]
+      "args": ["/home/ai-gateway/.npm-global/lib/node_modules/task-master-ai/dist/mcp-server.js"]
     },
     "playwright": {
       "command": "npx",
@@ -81,27 +74,27 @@ The container includes MCP servers pre-configured. Add this to your project's `.
 }
 ```
 
-## Volumes
+## Volumes (Bind Mounts)
 
-| Volume | Path | Purpose |
-|--------|------|---------|
-| `ai-gateway-config` | `/home/ai-gateway/.config` | OpenChamber & OpenCode config |
-| `ai-gateway-opencode` | `/home/ai-gateway/.local/share/opencode` | OpenCode data |
-| `ai-gateway-state` | `/home/ai-gateway/.local/state` | OpenCode state |
-| `ai-gateway-claude` | `/home/ai-gateway/.claude` | Claude Code auth |
-| `ai-gateway-taskmaster` | `/home/ai-gateway/.taskmaster` | Task Master data |
-| `ai-gateway-playwright` | `/home/ai-gateway/.cache/ms-playwright` | Chromium browser cache |
-| `ai-gateway-workspaces` | `/home/ai-gateway/workspaces` | Project files |
+| Host Path | Container Path | Purpose |
+|-----------|----------------|---------|
+| `/home/ubuntu/agents/claude` | `/home/ai-gateway/.claude` | Claude Code auth |
+| `/home/ubuntu/agents/9router` | `/home/ai-gateway/.9router` | 9router auth/settings |
+| `/home/ubuntu/agents/openchamber` | `/home/ai-gateway/.config/openchamber` | OpenChamber config |
+| `/home/ubuntu/agents/opencode-config` | `/home/ai-gateway/.config/opencode` | OpenCode config |
+| `/home/ubuntu/agents/opencode` | `/home/ai-gateway/.local/share/opencode` | OpenCode data |
+| `/home/ubuntu/agents/workspace` | `/workspace` | Shared workspace |
 
 ## Architecture
 
 ```
-Browser → OpenChamber (:3000) / ClaudeCodeUI (:3001)
+Browser → OpenChamber (:7802) / ClaudeCodeUI (:3011)
               │
               ├── OpenCode CLI
               ├── Claude Code CLI
               ├── Task Master MCP (on demand)
-              └── Playwright MCP (on demand)
+              ├── Playwright MCP (on demand)
+              └── 9router (:20128, local)
 ```
 
 ## Resource Usage
