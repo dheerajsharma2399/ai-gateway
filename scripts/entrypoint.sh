@@ -153,7 +153,7 @@ cleanup() {
 }
 
 # Trap docker SIGTERM and Ctrl+C SIGINT
-trap cleanup SIGTERM SIGINT
+trap cleanup TERM INT
 
 # OpenChamber always runs on port 7802
 OPENCHAMBER_PORT="7802"
