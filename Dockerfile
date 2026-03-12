@@ -69,7 +69,7 @@ WORKDIR /home/ai-gateway
 # Install all CLI tools together — shared node_modules under npm prefix
 # opencode-ai          → `opencode` CLI
 # @anthropic/claude-code → `claude` CLI
-# @anthropic/claude-code-ui → `claude-code-ui` web server
+# @siteboon/claude-code-ui → `claude-code-ui` web server
 # oh-my-opencode       → opencode plugin (ultrawork, agents, LSP, etc.)
 # 9router              → local AI endpoint proxy (`~/.9router/db.json`)
 # claude-task-master   → `task-master` MCP server
@@ -82,7 +82,7 @@ RUN npm config set prefix /home/ai-gateway/.npm-global && \
     npm install -g \
         opencode-ai@latest \
         @anthropic-ai/claude-code@latest \
-        @anthropic-ai/claude-code-ui@latest \
+        @siteboon/claude-code-ui@latest \
         oh-my-opencode@latest \
         9router@latest \
         claude-task-master@latest \
