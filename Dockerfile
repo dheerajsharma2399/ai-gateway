@@ -55,12 +55,17 @@ WORKDIR /home/ai-gateway
 # 9router → local AI endpoint proxy
 # task-master-ai → `task-master-mcp` server
 # playwright → browser automation CLI + MCP
+# Set up NPM global directory
 RUN npm config set prefix /home/ai-gateway/.npm-global && \
  mkdir -p /home/ai-gateway/.npm-global \
  /home/ai-gateway/.local \
  /home/ai-gateway/.config \
  /home/ai-gateway/.ssh && \
- npm install -g \
+ chown -R ai-gateway:ai-gateway /home/ai-gateway
+
+# Use Docker Buildx caching for NPM to drastically speed up builds
+RUN --mount=type=cache,target=/home/ai-gateway/.npm,uid=1000,gid=1000 \
+ npm install -g --prefer-offline --no-audit --no-fund --loglevel=error \
  opencode-ai@latest \
  @anthropic-ai/claude-code@latest \
  @siteboon/claude-code-ui@latest \
@@ -68,9 +73,10 @@ RUN npm config set prefix /home/ai-gateway/.npm-global && \
  oh-my-opencode@latest \
  9router@latest \
  task-master-ai@latest \
- playwright@latest && \
- npx playwright install --with-deps chromium && \
- chown -R ai-gateway:ai-gateway /home/ai-gateway
+ playwright@latest
+
+# Install Playwright dependencies separately for better caching
+RUN npx playwright install --with-deps chromium
 
 USER ai-gateway
 
