@@ -107,7 +107,8 @@ OCLITELLMEOF
     jq -s '.[0] * .[1] |
           if (.plugin // []) | index("oh-my-opencode") == null then .plugin += ["oh-my-opencode"] else . end |
           (.provider.litellm.models // {}) |= with_entries(.key |= if startswith("litellm/") then . else "litellm/" + . end) |
-          if .model and (.model | startswith("litellm/") | not) then .model = "litellm/" + .model else . end
+          if .model and (.model | startswith("litellm/") | not) then .model = "litellm/" + .model else . end |
+          if .agent then .agents = .agent | del(.agent) else . end
           ' "${OPENCODE_CONFIG_FILE}" /tmp/litellm_provider.json > "${TEMP_CONF}"
     mv "${TEMP_CONF}" "${OPENCODE_CONFIG_FILE}"
   else
@@ -168,13 +169,23 @@ export PORT="${CLAUDEUI_PORT}"
 export HOST="0.0.0.0"
 
 # Fix for Claude Code UI: it expects the SDK at a specific nested path when installed globally
-CLAUDE_UI_INTERNAL_SDK="${HOME}/.npm-global/lib/node_modules/@siteboon/claude-code-ui/node_modules/@anthropic-ai/claude-agent-sdk"
-GLOBAL_CLAUDE_SDK="${HOME}/.npm-global/lib/node_modules/@anthropic-ai/claude-agent-sdk"
+CLAUDE_UI_INTERNAL_SDK_DIR="${HOME}/.npm-global/lib/node_modules/@siteboon/claude-code-ui/node_modules/@anthropic-ai/claude-agent-sdk"
+GLOBAL_CLAUDE_SDK_DIR="${HOME}/.npm-global/lib/node_modules/@anthropic-ai/claude-agent-sdk"
 
-if [ -d "${GLOBAL_CLAUDE_SDK}" ] && [ ! -d "${CLAUDE_UI_INTERNAL_SDK}" ]; then
-  echo "[entrypoint] Symlinking Claude Agent SDK for UI compatibility..."
-  mkdir -p "$(dirname "${CLAUDE_UI_INTERNAL_SDK}")"
-  ln -sf "${GLOBAL_CLAUDE_SDK}" "${CLAUDE_UI_INTERNAL_SDK}"
+# Determine the actual cli.js location
+# It might be at the root of the sdk, or in dist/cli.js, or even in the claude-code package
+FOUND_CLI_JS=$(find "${GLOBAL_CLAUDE_SDK_DIR}" -name "cli.js" | head -n 1)
+if [ -z "${FOUND_CLI_JS}" ]; then
+  # Fallback: maybe it's in @anthropic-ai/claude-code
+  FOUND_CLI_JS=$(find "${HOME}/.npm-global/lib/node_modules/@anthropic-ai/claude-code" -name "cli.js" | head -n 1)
+fi
+
+if [ -n "${FOUND_CLI_JS}" ]; then
+  echo "[entrypoint] Found Claude CLI at ${FOUND_CLI_JS}. Symlinking for UI compatibility..."
+  mkdir -p "${CLAUDE_UI_INTERNAL_SDK_DIR}"
+  ln -sf "${FOUND_CLI_JS}" "${CLAUDE_UI_INTERNAL_SDK_DIR}/cli.js"
+else
+  echo "[entrypoint] warning: could not find cli.js for Claude Code UI"
 fi
 
 claude-code-ui > /tmp/claude-code-ui.log 2>&1 &
