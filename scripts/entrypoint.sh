@@ -143,7 +143,7 @@ NINE_ROUTER_PORT="${NINE_ROUTER_PORT:-20128}"
 if [ "${NINE_ROUTER_ENABLED}" = "true" ]; then
   echo "[entrypoint] starting 9router on port ${NINE_ROUTER_PORT}..."
   mkdir -p "${HOME}/.9router"
-  9router --port "${NINE_ROUTER_PORT}" --no-browser --skip-update > /tmp/9router.log 2>&1 &
+  9router --port "${NINE_ROUTER_PORT}" --no-browser --skip-update > "${OPENCODE_CONFIG_DIR}/9router.log" 2>&1 &
   NINE_ROUTER_PID=$!
   echo "[entrypoint] 9router started (PID: ${NINE_ROUTER_PID})"
 fi
@@ -192,7 +192,7 @@ else
   echo "[entrypoint] warning: could not find cli.js for Claude Code UI"
 fi
 
-claude-code-ui > /tmp/claude-code-ui.log 2>&1 &
+claude-code-ui > "${OPENCODE_CONFIG_DIR}/claude-ui.log" 2>&1 &
 CLAUDEUI_PID=$!
 echo "[entrypoint] ClaudeCodeUI started (PID: ${CLAUDEUI_PID})"
 

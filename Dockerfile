@@ -87,6 +87,7 @@ RUN mkdir -p /home/ai-gateway/workspaces \
   /home/ai-gateway/.claude \
   /home/ai-gateway/.taskmaster \
   /home/ai-gateway/.config/opencode \
+  /home/ai-gateway/.claude-code-ui \
   /home/ai-gateway/.cache/ms-playwright \
   /home/ai-gateway/.cache/opencode && \
   chown -R ai-gateway:ai-gateway /home/ai-gateway
