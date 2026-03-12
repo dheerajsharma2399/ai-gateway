@@ -44,6 +44,8 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/home/ai-gateway/.cache/ms-playwright
 ENV XDG_CONFIG_HOME=/home/ai-gateway/.config
 ENV XDG_DATA_HOME=/home/ai-gateway/.local/share
 ENV XDG_STATE_HOME=/home/ai-gateway/.local/state
+# Allow OpenCode to dynamically require() globally-installed npm providers (e.g. @ai-sdk/openai-compatible)
+ENV NODE_PATH=/home/ai-gateway/.npm-global/lib/node_modules
 
 WORKDIR /home/ai-gateway
 
@@ -83,9 +85,10 @@ RUN npx playwright install --with-deps chromium
 RUN mkdir -p /home/ai-gateway/workspaces \
  /home/ai-gateway/.claude \
  /home/ai-gateway/.taskmaster \
+ /home/ai-gateway/.config/opencode \
  /home/ai-gateway/.cache/ms-playwright \
  /home/ai-gateway/.cache/opencode && \
- chown -R ai-gateway:ai-gateway /home/ai-gateway/.cache \
+ chown -R ai-gateway:ai-gateway /home/ai-gateway/.cache /home/ai-gateway/.config \
  && chown ai-gateway:ai-gateway /home/ai-gateway/workspaces /home/ai-gateway/.claude /home/ai-gateway/.taskmaster || true
 
 USER ai-gateway
