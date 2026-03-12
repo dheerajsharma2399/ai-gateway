@@ -80,6 +80,7 @@ services:
       - /home/ubuntu/agents/openchamber:/home/ai-gateway/.config/openchamber
       - /home/ubuntu/agents/opencode-config:/home/ai-gateway/.config/opencode
       - /home/ubuntu/agents/opencode:/home/ai-gateway/.local/share/opencode
+      - /home/ubuntu/agents/claude-code-ui:/home/ai-gateway/.claude-code-ui
       - /home/ubuntu/agents/workspace:/workspace
 
     environment:
@@ -94,6 +95,7 @@ services:
       # ── Claude Code UI ─────────────────────────────────────────────────────────────────────────────
       CLAUDEUI_PORT: "3011"
       PORT: "3011"
+      DATABASE_PATH: /home/ai-gateway/.claude-code-ui/auth.db
       HOST: "0.0.0.0"
 
       # ── LiteLLM proxy — all providers route through here ─────────────────────
