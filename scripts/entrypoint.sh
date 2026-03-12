@@ -98,36 +98,13 @@ else
 }
 OCLITELLMEOF
 
-  # Validate existing config (if any) before merging — corrupt file would cause a 500 error
-  if [ -f "${OPENCODE_CONFIG_FILE}" ] && jq empty "${OPENCODE_CONFIG_FILE}" 2>/dev/null; then
-    # OLD config wins: .[1] * .[0] means .[0] (old) overrides .[1] (new defaults)
-    # 1. Merge the configs
-    # 2. Revert 'agents' -> 'agent' if it mistakenly exists from previous buggy runs
-    # 3. Ensure 'oh-my-opencode' is in the plugin list
-    # 4. Ensure the main model and agent models are prefixed with 'litellm/' if using litellm
-    jq -s '.[1] * .[0] | 
-          if .agents and .agent == null then .agent = .agents else . end |
-          del(.agents) |
-          if (.plugin // []) | index("oh-my-opencode") == null
-          then .plugin = ((.plugin // []) + ["oh-my-opencode"])
-          else . end |
-          if .model and (.model | startswith("litellm/") | not) 
-          then .model = "litellm/" + .model 
-          else . end |
-          if .agent then
-            .agent |= with_entries(
-              if .value.model and (.value.model | startswith("litellm/") | not)
-              then .value.model = "litellm/" + .value.model
-              else . end
-            )
-          else . end' \
-        "${OPENCODE_CONFIG_FILE}" /tmp/litellm_provider.json > "${OPENCODE_CONFIG_FILE}.tmp" \
-        && mv "${OPENCODE_CONFIG_FILE}.tmp" "${OPENCODE_CONFIG_FILE}"
-    echo "[entrypoint] OpenCode config merged (existing settings preserved and fixed)"
-  else
-    # No config or corrupt — start fresh with the provider block
+  # If config is missing or invalid, write a fresh one with the provider block.
+  # Otherwise, leave it alone to let the user manage it.
+  if [ ! -f "${OPENCODE_CONFIG_FILE}" ] || ! jq empty "${OPENCODE_CONFIG_FILE}" 2>/dev/null; then
     cp /tmp/litellm_provider.json "${OPENCODE_CONFIG_FILE}"
-    echo "[entrypoint] OpenCode config written fresh (no valid existing config)"
+    echo "[entrypoint] OpenCode config written fresh (no valid existing config found)"
+  else
+    echo "[entrypoint] OpenCode config already exists and is valid; skipping injection"
   fi
 
   rm -f /tmp/litellm_provider.json
