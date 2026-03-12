@@ -115,6 +115,16 @@ OCLITELLMEOF
   fi
 
   rm -f /tmp/litellm_provider.json
+
+  # OpenCode resolves "npm" providers from the config dir's node_modules.
+  # Symlink the globally-installed @ai-sdk/openai-compatible in there so it's found.
+  GLOBAL_SDK="${NPM_CONFIG_PREFIX:-/home/ai-gateway/.npm-global}/lib/node_modules/@ai-sdk/openai-compatible"
+  LOCAL_SDK="${OPENCODE_CONFIG_DIR}/node_modules/@ai-sdk/openai-compatible"
+  if [ -d "${GLOBAL_SDK}" ] && [ ! -e "${LOCAL_SDK}" ]; then
+    mkdir -p "${OPENCODE_CONFIG_DIR}/node_modules/@ai-sdk"
+    ln -sf "${GLOBAL_SDK}" "${LOCAL_SDK}"
+    echo "[entrypoint] Linked @ai-sdk/openai-compatible into OpenCode config node_modules"
+  fi
 fi
 
 # --- OpenChamber Args ---
