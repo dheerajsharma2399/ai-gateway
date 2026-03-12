@@ -55,6 +55,13 @@ fi
 # --- Git Safe Directory (fix 'dubious ownership' on volume-mounted workspaces) ---
 git config --global --add safe.directory '*' 2>/dev/null || true
 
+## --- Startup Diagnostics ---
+echo "[entrypoint] User: $(id)"
+echo "[entrypoint] Node environment: $(node -v)"
+echo "[entrypoint] Working directory: $(pwd)"
+echo "[entrypoint] Checking binary permissions..."
+ls -la $(which node) $(which opencode) $(which claude) 2>/dev/null || echo "[entrypoint] warning: some binaries not in PATH"
+
 # --- OpenCode Setup & LiteLLM Injection ---
 OPENCODE_CONFIG_FILE="${OPENCODE_CONFIG_DIR}/opencode.json"
 mkdir -p "${OPENCODE_CONFIG_DIR}"
@@ -71,7 +78,6 @@ else
   # Write the new provider block to a temp file
   cat > /tmp/litellm_provider.json <<OCLITELLMEOF
 {
-  "\$schema": "https://opencode.ai/config.json",
   "plugin": ["oh-my-opencode"],
   "model": "litellm/${_OPENCODE_MODEL}",
   "provider": {
@@ -83,28 +89,30 @@ else
         "apiKey": "${_LITELLM_KEY}"
       },
       "models": {
-        "${_OPENCODE_MODEL}": { "name": "Primary (Claude)" },
-        "deepak/meta/llama-3.1-405b-instruct": { "name": "Deepak - Llama 405B" },
-        "deepak/nvidia/nemotron-4-340b-instruct": { "name": "Deepak - Nemotron 340B" },
-        "deepak/z-ai/glm5": { "name": "Deepak - GLM5" },
-        "deepak/qwen/qwen3.5-397b-a17b": { "name": "Deepak - Qwen 3.5 397B" },
-        "dheeru/moonshotai/kimi-k2.5": { "name": "Dheeru - Kimi K2.5" },
-        "drdash/google/gemma-3-27b-it:free": { "name": "DrDash - Gemma 3 27B (free)" },
-        "akhil/anthropic/claude-3.5-sonnet": { "name": "Akhil - Claude 3.5 Sonnet" },
-        "dhanesh/google/gemma-3-27b-it:free": { "name": "Dhanesh - Gemma 3 27B (free)" }
+        "litellm/${_OPENCODE_MODEL}": { "name": "Primary (Claude)" }
       }
     }
   }
 }
 OCLITELLMEOF
 
-  # If config is missing or invalid, write a fresh one with the provider block.
-  # Otherwise, leave it alone to let the user manage it.
-  if [ ! -f "${OPENCODE_CONFIG_FILE}" ] || ! jq empty "${OPENCODE_CONFIG_FILE}" 2>/dev/null; then
-    cp /tmp/litellm_provider.json "${OPENCODE_CONFIG_FILE}"
-    echo "[entrypoint] OpenCode config written fresh (no valid existing config found)"
+  # Robust merge: preserve existing user config if valid, else write fresh.
+  # If valid, we merge the LiteLLM provider block but let user models/agents win.
+  if [ -f "${OPENCODE_CONFIG_FILE}" ] && jq empty "${OPENCODE_CONFIG_FILE}" 2>/dev/null; then
+    echo "[entrypoint] OpenCode config already exists; merging LiteLLM provider..."
+    # Merging: .[0] is existing config, .[1] is our injection.
+    # We use * to merge, but we want to make sure 'litellm' provider exists.
+    # We also ensure model prefixes are added if missing to prevent "model not found" errors.
+    TEMP_CONF=$(mktemp)
+    jq -s '.[0] * .[1] |
+          if (.plugin // []) | index("oh-my-opencode") == null then .plugin += ["oh-my-opencode"] else . end |
+          (.provider.litellm.models // {}) |= with_entries(.key |= if startswith("litellm/") then . else "litellm/" + . end) |
+          if .model and (.model | startswith("litellm/") | not) then .model = "litellm/" + .model else . end
+          ' "${OPENCODE_CONFIG_FILE}" /tmp/litellm_provider.json > "${TEMP_CONF}"
+    mv "${TEMP_CONF}" "${OPENCODE_CONFIG_FILE}"
   else
-    echo "[entrypoint] OpenCode config already exists and is valid; skipping injection"
+    cp /tmp/litellm_provider.json "${OPENCODE_CONFIG_FILE}"
+    echo "[entrypoint] OpenCode config written fresh"
   fi
 
   rm -f /tmp/litellm_provider.json
@@ -116,7 +124,7 @@ OCLITELLMEOF
   if [ -d "${GLOBAL_SDK}" ] && [ ! -e "${LOCAL_SDK}" ]; then
     mkdir -p "${OPENCODE_CONFIG_DIR}/node_modules/@ai-sdk"
     ln -sf "${GLOBAL_SDK}" "${LOCAL_SDK}"
-    echo "[entrypoint] Linked @ai-sdk/openai-compatible into OpenCode config node_modules"
+    echo "[entrypoint] Linked @ai-sdk/openai-compatible"
   fi
 fi
 

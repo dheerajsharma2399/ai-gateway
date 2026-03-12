@@ -60,37 +60,35 @@ WORKDIR /home/ai-gateway
 # playwright → browser automation CLI + MCP
 # Set up NPM global directory
 RUN npm config set prefix /home/ai-gateway/.npm-global && \
- mkdir -p /home/ai-gateway/.npm-global \
- /home/ai-gateway/.local \
- /home/ai-gateway/.config \
- /home/ai-gateway/.ssh && \
- chown -R ai-gateway:ai-gateway /home/ai-gateway
+  mkdir -p /home/ai-gateway/.npm-global \
+  /home/ai-gateway/.local \
+  /home/ai-gateway/.config \
+  /home/ai-gateway/.ssh
 
 # Use Docker Buildx caching for NPM to drastically speed up builds
 RUN --mount=type=cache,target=/home/ai-gateway/.npm,uid=1000,gid=1000 \
- npm install -g --prefer-offline --no-audit --no-fund --loglevel=error \
- opencode-ai@latest \
- @anthropic-ai/claude-code@latest \
- @siteboon/claude-code-ui@latest \
- @openchamber/web@latest \
- oh-my-opencode@latest \
- 9router@latest \
- task-master-ai@latest \
- @ai-sdk/openai-compatible@latest \
- playwright@latest
+  npm install -g --prefer-offline --no-audit --no-fund --loglevel=error \
+  opencode-ai@latest \
+  @anthropic-ai/claude-code@latest \
+  @siteboon/claude-code-ui@latest \
+  @openchamber/web@latest \
+  oh-my-opencode@latest \
+  9router@latest \
+  task-master-ai@latest \
+  @ai-sdk/openai-compatible@latest \
+  playwright@latest
 
 # Install Playwright dependencies separately for better caching
 RUN npx playwright install --with-deps chromium
 
 # Create required directories and fix cache permissions while still root
 RUN mkdir -p /home/ai-gateway/workspaces \
- /home/ai-gateway/.claude \
- /home/ai-gateway/.taskmaster \
- /home/ai-gateway/.config/opencode \
- /home/ai-gateway/.cache/ms-playwright \
- /home/ai-gateway/.cache/opencode && \
- chown -R ai-gateway:ai-gateway /home/ai-gateway/.cache /home/ai-gateway/.config \
- && chown ai-gateway:ai-gateway /home/ai-gateway/workspaces /home/ai-gateway/.claude /home/ai-gateway/.taskmaster || true
+  /home/ai-gateway/.claude \
+  /home/ai-gateway/.taskmaster \
+  /home/ai-gateway/.config/opencode \
+  /home/ai-gateway/.cache/ms-playwright \
+  /home/ai-gateway/.cache/opencode && \
+  chown -R ai-gateway:ai-gateway /home/ai-gateway
 
 USER ai-gateway
 
