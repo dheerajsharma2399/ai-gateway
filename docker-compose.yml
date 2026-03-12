@@ -1,0 +1,122 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# AI Gateway — Oracle ARM64 VPS + Dokploy
+#
+# Services:
+#   OpenChamber WebUI (opencode.mooh.me → port 7802) — browser UI for OpenCode
+#   Claude Code UI   (claude.mooh.me   → port 3011) — Claude Code web interface
+#
+# Data layout on VPS:
+#   /home/ubuntu/agents/
+#     ├── claude/          → Claude Code auth
+#     ├── 9router/         → 9router auth + settings (`db.json`)
+#     ├── openchamber/     → OpenChamber config
+#     ├── opencode-config/ → OpenCode config
+#     ├── opencode/        → OpenCode data
+#     └── workspace/       → shared project files
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  ai-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      pull: true
+    image: ai-gateway:local
+    container_name: ai-gateway
+    restart: unless-stopped
+    platform: linux/arm64
+
+    # Tailscale-only access: bind services to localhost on the host.
+    # Access via host Tailscale routing/proxy, not public Traefik.
+    ports:
+      - "127.0.0.1:7802:7802"
+      - "127.0.0.1:3011:3011"
+      - "127.0.0.1:20128:20128"
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+
+    volumes:
+      - /home/ubuntu/agents/claude:/home/ai-gateway/.claude
+      - /home/ubuntu/agents/9router:/home/ai-gateway/.9router
+      - /home/ubuntu/agents/openchamber:/home/ai-gateway/.config/openchamber
+      - /home/ubuntu/agents/opencode-config:/home/ai-gateway/.config/opencode
+      - /home/ubuntu/agents/opencode:/home/ai-gateway/.local/share/opencode
+      - /home/ubuntu/agents/workspace:/workspace
+
+    environment:
+      # ── OpenChamber ──────────────────────────────────────────────────────────
+      OPENCHAMBER_PORT: "7802"
+      OPENCODE_WORKSPACE: "/workspace"
+
+      # ── 9router (for LiteLLM upstream) ─────────────────────────────────────
+      NINE_ROUTER_ENABLED: ${NINE_ROUTER_ENABLED:-true}
+      NINE_ROUTER_PORT: ${NINE_ROUTER_PORT:-20128}
+
+      # ── Claude Code UI ─────────────────────────────────────────────────────────────────────────────
+      CLAUDEUI_PORT: "3011"
+      PORT: "3011"
+      HOST: "0.0.0.0"
+
+      # ── LiteLLM proxy — all providers route through here ─────────────────────
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      LITELLM_API_KEY: ${LITELLM_API_KEY}
+
+      # Anthropic (Claude Code uses this) → LiteLLM
+      ANTHROPIC_BASE_URL: ${LITELLM_BASE_URL}
+      ANTHROPIC_API_KEY: ${LITELLM_MASTER_KEY}
+
+      # OpenAI-compatible (OpenCode) → LiteLLM
+      OPENAI_BASE_URL: ${LITELLM_BASE_URL}/v1
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY}
+
+      # Gemini → LiteLLM
+      GEMINI_API_KEY: ${LITELLM_MASTER_KEY}
+      GOOGLE_GENERATIVEAI_API_URL: ${LITELLM_BASE_URL}/v1
+
+      # Mistral → LiteLLM
+      MISTRAL_API_KEY: ${LITELLM_MASTER_KEY}
+      MISTRAL_API_URL: ${LITELLM_BASE_URL}/v1
+
+      # Azure → LiteLLM
+      AZURE_OPENAI_API_KEY: ${LITELLM_MASTER_KEY}
+      AZURE_OPENAI_ENDPOINT: ${LITELLM_BASE_URL}
+
+      # ── OpenCode default model ────────────────────────────────────────────────
+      OPENCODE_DEFAULT_MODEL: ${OPENCODE_DEFAULT_MODEL:-drdash/anthropic/claude-3.5-sonnet}
+
+      # ── Claude Code model ─────────────────────────────────────────────────────
+      # CLAUDE_MODEL: sonnet
+
+      # ── GitHub MCP server ─────────────────────────────────────────────────────
+      GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN:-}
+
+      # ── Git identity ──────────────────────────────────────────────────────────
+      GIT_USER_NAME: ${GIT_USER_NAME:-AI Agent}
+      GIT_USER_EMAIL: ${GIT_USER_EMAIL:-agent@localhost}
+
+      # ── Timezone ──────────────────────────────────────────────────────────────
+      TZ: Asia/Kolkata
+
+      # ── UI password (optional) ────────────────────────────────────────────────
+      UI_PASSWORD: ${UI_PASSWORD:-}
+
+    shm_size: "1gb"
+
+    deploy:
+      resources:
+        limits:
+          memory: 6g
+        reservations:
+          memory: 512m
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7802"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+
+

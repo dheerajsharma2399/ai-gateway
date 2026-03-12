@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "task-master": {
+      "command": "node",
+      "args": ["/home/ai-gateway/.npm-global/lib/node_modules/claude-task-master/dist/index.js"],
+      "env": {
+        "TASKMASTER_MODEL": "claude-code/sonnet",
+        "TASKMASTER_RESEARCH_MODEL": "claude-code/opus"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-playwright"],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": "/home/ai-gateway/.cache/ms-playwright"
+      }
+    }
+  }
+}
