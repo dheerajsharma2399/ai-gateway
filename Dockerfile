@@ -61,6 +61,8 @@ RUN npm config set prefix /home/ai-gateway/.npm-global && \
  npm install -g \
  opencode-ai@latest \
  @anthropic-ai/claude-code@latest \
+ @siteboon/claude-code-ui@latest \
+ cloudcli@latest \
  @openchamber/web@latest \
  oh-my-opencode@latest \
  9router@latest \
