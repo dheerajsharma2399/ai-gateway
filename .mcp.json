@@ -2,7 +2,7 @@
   "mcpServers": {
     "task-master": {
       "command": "node",
-      "args": ["/home/ai-gateway/.npm-global/lib/node_modules/claude-task-master/dist/index.js"],
+      "args": ["/home/ai-gateway/.npm-global/lib/node_modules/task-master-ai/dist/mcp-server.js"],
       "env": {
         "TASKMASTER_MODEL": "claude-code/sonnet",
         "TASKMASTER_RESEARCH_MODEL": "claude-code/opus"

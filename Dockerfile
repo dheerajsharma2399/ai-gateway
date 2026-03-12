@@ -73,7 +73,7 @@ WORKDIR /home/ai-gateway
 # @siteboon/claude-code-ui → `claude-code-ui` web server
 # oh-my-opencode       → opencode plugin (ultrawork, agents, LSP, etc.)
 # 9router              → local AI endpoint proxy (`~/.9router/db.json`)
-# claude-task-master   → `task-master` MCP server
+# task-master-ai       → `task-master-mcp` server
 # playwright           → browser automation CLI + MCP
 RUN npm config set prefix /home/ai-gateway/.npm-global && \
     mkdir -p /home/ai-gateway/.npm-global \
@@ -86,7 +86,7 @@ RUN npm config set prefix /home/ai-gateway/.npm-global && \
         @siteboon/claude-code-ui@latest \
         oh-my-opencode@latest \
         9router@latest \
-        claude-task-master@latest \
+        task-master-ai@latest \
         playwright@latest && \
     npx playwright install --with-deps chromium && \
     chown -R ai-gateway:ai-gateway /home/ai-gateway
