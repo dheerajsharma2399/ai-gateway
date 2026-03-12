@@ -25,7 +25,6 @@ services:
     container_name: ai-gateway
     restart: unless-stopped
     platform: linux/arm64
-    user: root
 
     # Keep localhost-only host bindings for local/Tailscale access.
     # Also expose services through Traefik domain routing on dokploy-network.
