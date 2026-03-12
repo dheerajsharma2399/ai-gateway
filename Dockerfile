@@ -32,8 +32,10 @@ RUN apt-get update && \
 
 ENV NODE_ENV=production
 
-# Create ai-gateway user
-RUN useradd -m -s /bin/bash ai-gateway
+# Create ai-gateway user with UID 1000 to match host permissions
+# Remove existing node user first to free up UID 1000
+RUN userdel -r node && \
+ useradd -m -u 1000 -s /bin/bash ai-gateway
 
 ENV HOME="/home/ai-gateway"
 ENV NPM_CONFIG_PREFIX=/home/ai-gateway/.npm-global
@@ -62,7 +64,6 @@ RUN npm config set prefix /home/ai-gateway/.npm-global && \
  opencode-ai@latest \
  @anthropic-ai/claude-code@latest \
  @siteboon/claude-code-ui@latest \
- cloudcli@latest \
  @openchamber/web@latest \
  oh-my-opencode@latest \
  9router@latest \
