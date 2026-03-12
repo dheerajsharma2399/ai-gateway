@@ -61,13 +61,12 @@ if [ ! -w "${OPENCODE_CONFIG_DIR}" ]; then
 else
   echo "[entrypoint] configuring OpenCode providers & plugins..."
 
-  # Always write a fresh config to avoid stale/corrupt volume data causing 500 errors
-  # LITELLM_BASE_URL from docker-compose already has the base URL without /v1
   _LITELLM_URL="${LITELLM_BASE_URL:-http://host.docker.internal:4000}/v1"
   _OPENCODE_MODEL="${OPENCODE_DEFAULT_MODEL:-drdash/anthropic/claude-3.5-sonnet}"
   _LITELLM_KEY="${LITELLM_API_KEY:-sk-dummy}"
 
-  cat > "${OPENCODE_CONFIG_FILE}" <<OPENCODEEOF
+  # Write the new provider block to a temp file
+  cat > /tmp/litellm_provider.json <<OCLITELLMEOF
 {
   "\$schema": "https://opencode.ai/config.json",
   "plugin": ["oh-my-opencode"],
@@ -94,9 +93,24 @@ else
     }
   }
 }
-OPENCODEEOF
+OCLITELLMEOF
 
-  echo "[entrypoint] OpenCode config written to ${OPENCODE_CONFIG_FILE}"
+  # Validate existing config (if any) before merging — corrupt file would cause a 500 error
+  if [ -f "${OPENCODE_CONFIG_FILE}" ] && jq empty "${OPENCODE_CONFIG_FILE}" 2>/dev/null; then
+    # Existing file is valid JSON: deep-merge, let old keys survive, new provider overrides
+    jq -s '.[0] * .[1] | if (.plugin // []) | index("oh-my-opencode") == null
+          then .plugin = ((.plugin // []) + ["oh-my-opencode"])
+          else . end' \
+        "${OPENCODE_CONFIG_FILE}" /tmp/litellm_provider.json > "${OPENCODE_CONFIG_FILE}.tmp" \
+        && mv "${OPENCODE_CONFIG_FILE}.tmp" "${OPENCODE_CONFIG_FILE}"
+    echo "[entrypoint] OpenCode config merged with existing settings"
+  else
+    # No config or corrupt — start fresh with the provider block
+    cp /tmp/litellm_provider.json "${OPENCODE_CONFIG_FILE}"
+    echo "[entrypoint] OpenCode config written fresh (no valid existing config)"
+  fi
+
+  rm -f /tmp/litellm_provider.json
 fi
 
 # --- OpenChamber Args ---
