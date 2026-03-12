@@ -90,7 +90,9 @@ COPY --chmod=755 scripts/entrypoint.sh /app/entrypoint.sh
 RUN mkdir -p /home/ai-gateway/workspaces \
  /home/ai-gateway/.claude \
  /home/ai-gateway/.taskmaster \
- /home/ai-gateway/.cache/ms-playwright
+ /home/ai-gateway/.cache/ms-playwright \
+ /home/ai-gateway/.cache/opencode && \
+ chown -R ai-gateway:ai-gateway /home/ai-gateway/.cache
 
 EXPOSE 3010 3011
 
