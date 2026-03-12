@@ -73,6 +73,7 @@ RUN --mount=type=cache,target=/home/ai-gateway/.npm,uid=1000,gid=1000 \
  oh-my-opencode@latest \
  9router@latest \
  task-master-ai@latest \
+ @ai-sdk/openai-compatible@latest \
  playwright@latest
 
 # Install Playwright dependencies separately for better caching

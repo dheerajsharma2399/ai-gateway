@@ -52,26 +52,76 @@ if [ -f "${HOME}/.mcp.json.template" ] && [ ! -f "${HOME}/.mcp.json" ]; then
   cp "${HOME}/.mcp.json.template" "${HOME}/.mcp.json"
 fi
 
-# --- oh-my-opencode Plugin Setup ---
-# oh-my-opencode is installed globally; register it in opencode.json on first run
+# --- OpenCode Setup & LiteLLM Injection ---
 OPENCODE_CONFIG_FILE="${OPENCODE_CONFIG_DIR}/opencode.json"
 mkdir -p "${OPENCODE_CONFIG_DIR}"
+
 if [ ! -w "${OPENCODE_CONFIG_DIR}" ]; then
-  echo "[entrypoint] warning: ${OPENCODE_CONFIG_DIR} is not writable; skipping oh-my-opencode config injection"
-elif [ ! -f "${OPENCODE_CONFIG_FILE}" ] && ! echo '{}' > "${OPENCODE_CONFIG_FILE}"; then
-  echo "[entrypoint] warning: failed to create ${OPENCODE_CONFIG_FILE}; skipping oh-my-opencode config injection"
-elif command -v jq >/dev/null 2>&1; then
-  # Inject plugin entry (idempotent: only adds if not already present)
-  if jq 'if (.plugin // []) | index("oh-my-opencode") == null
-        then .plugin = ((.plugin // []) + ["oh-my-opencode"])
-        else . end' \
-      "${OPENCODE_CONFIG_FILE}" > "${OPENCODE_CONFIG_FILE}.tmp" && \
-      mv "${OPENCODE_CONFIG_FILE}.tmp" "${OPENCODE_CONFIG_FILE}"; then
-    echo "[entrypoint] oh-my-opencode plugin enabled in opencode.json"
+  echo "[entrypoint] warning: ${OPENCODE_CONFIG_DIR} is not writable; skipping OpenCode config injection"
+else
+  echo "[entrypoint] configuring OpenCode providers & plugins..."
+  
+  # Ensure LiteLLM models exist in environment variables (or fallbacks)
+  LITELLM_BASE_URL="${LITELLM_BASE_URL:-http://host.docker.internal:4000}/v1"
+  OPENCODE_DEFAULT_MODEL="${OPENCODE_DEFAULT_MODEL:-drdash/anthropic/claude-3.5-sonnet}"
+  
+  # Create a temporary JSON with the LiteLLM provider and our models
+  cat > /tmp/litellm_provider.json <<EOF
+{
+  "provider": {
+    "litellm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LiteLLM",
+      "options": {
+        "baseURL": "${LITELLM_BASE_URL}",
+        "apiKey": "${LITELLM_API_KEY:-dummy_key}"
+      },
+      "models": {
+        "${OPENCODE_DEFAULT_MODEL}": {
+          "name": "Primary (Claude)"
+        },
+        "deepak/meta/llama-3.1-405b-instruct": {
+          "name": "Deepak - Llama 405B"
+        },
+        "deepak/nvidia/nemotron-4-340b-instruct": {
+          "name": "Deepak - Nemotron 340B"
+        },
+        "deepak/z-ai/glm5": {
+          "name": "Deepak - GLM5"
+        },
+        "deepak/qwen/qwen3.5-397b-a17b": {
+          "name": "Deepak - Qwen 3.5 397B"
+        },
+        "dheeru/moonshotai/kimi-k2.5": {
+          "name": "Dheeru - Kimi K2.5"
+        },
+        "drdash/google/gemma-3-27b-it:free": {
+          "name": "DrDash - Gemma 3 27B (free)"
+        },
+        "akhil/anthropic/claude-3.5-sonnet": {
+          "name": "Akhil - Claude 3.5 Sonnet"
+        },
+        "dhanesh/google/gemma-3-27b-it:free": {
+          "name": "Dhanesh - Gemma 3 27B (free)"
+        }
+      }
+    }
+  },
+  "model": "${OPENCODE_DEFAULT_MODEL}"
+}
+EOF
+
+  if [ -f "${OPENCODE_CONFIG_FILE}" ]; then
+      # Merge new provider block and ensure oh-my-opencode is in plugins
+      jq -s '.[0] * .[1] | if (.plugin // []) | index("oh-my-opencode") == null then .plugin = ((.plugin // []) + ["oh-my-opencode"]) else . end' \
+          "${OPENCODE_CONFIG_FILE}" /tmp/litellm_provider.json > "${OPENCODE_CONFIG_FILE}.tmp" && \
+          mv "${OPENCODE_CONFIG_FILE}.tmp" "${OPENCODE_CONFIG_FILE}"
   else
-    echo "[entrypoint] warning: failed to update ${OPENCODE_CONFIG_FILE}; skipping oh-my-opencode config injection"
-    rm -f "${OPENCODE_CONFIG_FILE}.tmp"
+      # Create fresh mapping config
+      echo '{"$schema": "https://opencode.ai/config.json", "plugin": ["oh-my-opencode"]}' | jq -s '.[0] * .[1]' - /tmp/litellm_provider.json > "${OPENCODE_CONFIG_FILE}"
   fi
+  rm -f /tmp/litellm_provider.json
+  echo "[entrypoint] OpenCode configured with LiteLLM provider and oh-my-opencode plugin"
 fi
 
 # --- OpenChamber Args ---
