@@ -97,13 +97,14 @@ OCLITELLMEOF
 
   # Validate existing config (if any) before merging — corrupt file would cause a 500 error
   if [ -f "${OPENCODE_CONFIG_FILE}" ] && jq empty "${OPENCODE_CONFIG_FILE}" 2>/dev/null; then
-    # Existing file is valid JSON: deep-merge, let old keys survive, new provider overrides
-    jq -s '.[0] * .[1] | if (.plugin // []) | index("oh-my-opencode") == null
+    # OLD config wins: .[1] * .[0] means .[0] (old) overrides .[1] (new defaults)
+    # This preserves the user's real apiKey, baseURL (litellm:4000), model, and agent blocks
+    jq -s '.[1] * .[0] | if (.plugin // []) | index("oh-my-opencode") == null
           then .plugin = ((.plugin // []) + ["oh-my-opencode"])
           else . end' \
         "${OPENCODE_CONFIG_FILE}" /tmp/litellm_provider.json > "${OPENCODE_CONFIG_FILE}.tmp" \
         && mv "${OPENCODE_CONFIG_FILE}.tmp" "${OPENCODE_CONFIG_FILE}"
-    echo "[entrypoint] OpenCode config merged with existing settings"
+    echo "[entrypoint] OpenCode config merged (existing settings preserved)"
   else
     # No config or corrupt — start fresh with the provider block
     cp /tmp/litellm_provider.json "${OPENCODE_CONFIG_FILE}"
