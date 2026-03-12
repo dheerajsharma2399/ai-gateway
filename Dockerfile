@@ -78,6 +78,15 @@ RUN --mount=type=cache,target=/home/ai-gateway/.npm,uid=1000,gid=1000 \
 # Install Playwright dependencies separately for better caching
 RUN npx playwright install --with-deps chromium
 
+# Create required directories and fix cache permissions while still root
+RUN mkdir -p /home/ai-gateway/workspaces \
+ /home/ai-gateway/.claude \
+ /home/ai-gateway/.taskmaster \
+ /home/ai-gateway/.cache/ms-playwright \
+ /home/ai-gateway/.cache/opencode && \
+ chown -R ai-gateway:ai-gateway /home/ai-gateway/.cache \
+ && chown ai-gateway:ai-gateway /home/ai-gateway/workspaces /home/ai-gateway/.claude /home/ai-gateway/.taskmaster || true
+
 USER ai-gateway
 
 # Copy MCP server config template
@@ -85,14 +94,6 @@ COPY --chmod=644 .mcp.json /home/ai-gateway/.mcp.json.template
 
 # Copy entrypoint script
 COPY --chmod=755 scripts/entrypoint.sh /app/entrypoint.sh
-
-# Create required directories
-RUN mkdir -p /home/ai-gateway/workspaces \
- /home/ai-gateway/.claude \
- /home/ai-gateway/.taskmaster \
- /home/ai-gateway/.cache/ms-playwright \
- /home/ai-gateway/.cache/opencode && \
- chown -R ai-gateway:ai-gateway /home/ai-gateway/.cache
 
 EXPOSE 3010 3011
 
