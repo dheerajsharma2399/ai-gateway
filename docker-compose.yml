@@ -59,6 +59,16 @@ services:
       - "traefik.http.routers.claudeui-http.middlewares=redirect-to-https@file"
       - "traefik.http.routers.claudeui-http.service=claudeui-svc"
       - "traefik.http.services.claudeui-svc.loadbalancer.server.port=3011"
+      - "traefik.http.routers.ninerouter.rule=Host(`${NINETROUTER_DOMAIN:-kilo.mooh.me}`)"
+      - "traefik.http.routers.ninerouter.entrypoints=websecure"
+      - "traefik.http.routers.ninerouter.tls=true"
+      - "traefik.http.routers.ninerouter.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ninerouter.service=ninerouter-svc"
+      - "traefik.http.routers.ninerouter-http.rule=Host(`${NINETROUTER_DOMAIN:-kilo.mooh.me}`)"
+      - "traefik.http.routers.ninerouter-http.entrypoints=web"
+      - "traefik.http.routers.ninerouter-http.middlewares=redirect-to-https@file"
+      - "traefik.http.routers.ninerouter-http.service=ninerouter-svc"
+      - "traefik.http.services.ninerouter-svc.loadbalancer.server.port=20128"
 
     networks:
       - dokploy-network
