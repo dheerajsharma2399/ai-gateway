@@ -60,68 +60,43 @@ if [ ! -w "${OPENCODE_CONFIG_DIR}" ]; then
   echo "[entrypoint] warning: ${OPENCODE_CONFIG_DIR} is not writable; skipping OpenCode config injection"
 else
   echo "[entrypoint] configuring OpenCode providers & plugins..."
-  
-  # Ensure LiteLLM models exist in environment variables (or fallbacks)
-  LITELLM_BASE_URL="${LITELLM_BASE_URL:-http://host.docker.internal:4000}/v1"
-  OPENCODE_DEFAULT_MODEL="${OPENCODE_DEFAULT_MODEL:-drdash/anthropic/claude-3.5-sonnet}"
-  
-  # Create a temporary JSON with the LiteLLM provider and our models
-  cat > /tmp/litellm_provider.json <<EOF
+
+  # Always write a fresh config to avoid stale/corrupt volume data causing 500 errors
+  # LITELLM_BASE_URL from docker-compose already has the base URL without /v1
+  _LITELLM_URL="${LITELLM_BASE_URL:-http://host.docker.internal:4000}/v1"
+  _OPENCODE_MODEL="${OPENCODE_DEFAULT_MODEL:-drdash/anthropic/claude-3.5-sonnet}"
+  _LITELLM_KEY="${LITELLM_API_KEY:-sk-dummy}"
+
+  cat > "${OPENCODE_CONFIG_FILE}" <<OPENCODEEOF
 {
+  "\$schema": "https://opencode.ai/config.json",
+  "plugin": ["oh-my-opencode"],
+  "model": "litellm/${_OPENCODE_MODEL}",
   "provider": {
     "litellm": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "LiteLLM",
       "options": {
-        "baseURL": "${LITELLM_BASE_URL}",
-        "apiKey": "${LITELLM_API_KEY:-dummy_key}"
+        "baseURL": "${_LITELLM_URL}",
+        "apiKey": "${_LITELLM_KEY}"
       },
       "models": {
-        "${OPENCODE_DEFAULT_MODEL}": {
-          "name": "Primary (Claude)"
-        },
-        "deepak/meta/llama-3.1-405b-instruct": {
-          "name": "Deepak - Llama 405B"
-        },
-        "deepak/nvidia/nemotron-4-340b-instruct": {
-          "name": "Deepak - Nemotron 340B"
-        },
-        "deepak/z-ai/glm5": {
-          "name": "Deepak - GLM5"
-        },
-        "deepak/qwen/qwen3.5-397b-a17b": {
-          "name": "Deepak - Qwen 3.5 397B"
-        },
-        "dheeru/moonshotai/kimi-k2.5": {
-          "name": "Dheeru - Kimi K2.5"
-        },
-        "drdash/google/gemma-3-27b-it:free": {
-          "name": "DrDash - Gemma 3 27B (free)"
-        },
-        "akhil/anthropic/claude-3.5-sonnet": {
-          "name": "Akhil - Claude 3.5 Sonnet"
-        },
-        "dhanesh/google/gemma-3-27b-it:free": {
-          "name": "Dhanesh - Gemma 3 27B (free)"
-        }
+        "${_OPENCODE_MODEL}": { "name": "Primary (Claude)" },
+        "deepak/meta/llama-3.1-405b-instruct": { "name": "Deepak - Llama 405B" },
+        "deepak/nvidia/nemotron-4-340b-instruct": { "name": "Deepak - Nemotron 340B" },
+        "deepak/z-ai/glm5": { "name": "Deepak - GLM5" },
+        "deepak/qwen/qwen3.5-397b-a17b": { "name": "Deepak - Qwen 3.5 397B" },
+        "dheeru/moonshotai/kimi-k2.5": { "name": "Dheeru - Kimi K2.5" },
+        "drdash/google/gemma-3-27b-it:free": { "name": "DrDash - Gemma 3 27B (free)" },
+        "akhil/anthropic/claude-3.5-sonnet": { "name": "Akhil - Claude 3.5 Sonnet" },
+        "dhanesh/google/gemma-3-27b-it:free": { "name": "Dhanesh - Gemma 3 27B (free)" }
       }
     }
-  },
-  "model": "${OPENCODE_DEFAULT_MODEL}"
+  }
 }
-EOF
+OPENCODEEOF
 
-  if [ -f "${OPENCODE_CONFIG_FILE}" ]; then
-      # Merge new provider block and ensure oh-my-opencode is in plugins
-      jq -s '.[0] * .[1] | if (.plugin // []) | index("oh-my-opencode") == null then .plugin = ((.plugin // []) + ["oh-my-opencode"]) else . end' \
-          "${OPENCODE_CONFIG_FILE}" /tmp/litellm_provider.json > "${OPENCODE_CONFIG_FILE}.tmp" && \
-          mv "${OPENCODE_CONFIG_FILE}.tmp" "${OPENCODE_CONFIG_FILE}"
-  else
-      # Create fresh mapping config
-      echo '{"$schema": "https://opencode.ai/config.json", "plugin": ["oh-my-opencode"]}' | jq -s '.[0] * .[1]' - /tmp/litellm_provider.json > "${OPENCODE_CONFIG_FILE}"
-  fi
-  rm -f /tmp/litellm_provider.json
-  echo "[entrypoint] OpenCode configured with LiteLLM provider and oh-my-opencode plugin"
+  echo "[entrypoint] OpenCode config written to ${OPENCODE_CONFIG_FILE}"
 fi
 
 # --- OpenChamber Args ---
