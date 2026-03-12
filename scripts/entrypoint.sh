@@ -166,6 +166,17 @@ echo "[entrypoint] starting ClaudeCodeUI on port ${CLAUDEUI_PORT}..."
 # Run ClaudeCodeUI in background
 export PORT="${CLAUDEUI_PORT}"
 export HOST="0.0.0.0"
+
+# Fix for Claude Code UI: it expects the SDK at a specific nested path when installed globally
+CLAUDE_UI_INTERNAL_SDK="${HOME}/.npm-global/lib/node_modules/@siteboon/claude-code-ui/node_modules/@anthropic-ai/claude-agent-sdk"
+GLOBAL_CLAUDE_SDK="${HOME}/.npm-global/lib/node_modules/@anthropic-ai/claude-agent-sdk"
+
+if [ -d "${GLOBAL_CLAUDE_SDK}" ] && [ ! -d "${CLAUDE_UI_INTERNAL_SDK}" ]; then
+  echo "[entrypoint] Symlinking Claude Agent SDK for UI compatibility..."
+  mkdir -p "$(dirname "${CLAUDE_UI_INTERNAL_SDK}")"
+  ln -sf "${GLOBAL_CLAUDE_SDK}" "${CLAUDE_UI_INTERNAL_SDK}"
+fi
+
 claude-code-ui > /tmp/claude-code-ui.log 2>&1 &
 CLAUDEUI_PID=$!
 echo "[entrypoint] ClaudeCodeUI started (PID: ${CLAUDEUI_PID})"

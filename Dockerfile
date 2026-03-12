@@ -70,6 +70,7 @@ RUN --mount=type=cache,target=/home/ai-gateway/.npm,uid=1000,gid=1000 \
   npm install -g --prefer-offline --no-audit --no-fund --loglevel=error \
   opencode-ai@latest \
   @anthropic-ai/claude-code@latest \
+  @anthropic-ai/claude-agent-sdk@latest \
   @siteboon/claude-code-ui@latest \
   @openchamber/web@latest \
   oh-my-opencode@latest \
