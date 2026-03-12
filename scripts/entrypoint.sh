@@ -13,6 +13,12 @@ SSH_PUBLIC_KEY_PATH="${SSH_PRIVATE_KEY_PATH}.pub"
 
 echo "[entrypoint] AI Gateway starting..."
 
+# --- Persistent Startup Logging ---
+# We redirect stdout/stderr to a file in the volume so we can debug without docker logs access.
+STARTUP_LOG="${OPENCODE_CONFIG_DIR}/startup.log"
+exec > >(tee -a "${STARTUP_LOG}") 2>&1
+echo "--- Starting new session at $(date) ---"
+
 # --- SSH Key Setup ---
 mkdir -p "${SSH_DIR}"
 if ! chmod 700 "${SSH_DIR}" 2>/dev/null; then
