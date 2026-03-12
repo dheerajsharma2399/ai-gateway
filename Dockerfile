@@ -32,10 +32,10 @@ RUN apt-get update && \
 
 ENV NODE_ENV=production
 
-# Create ai-gateway user with UID 1000 to match host permissions
+# Create ai-gateway user with UID 1001 to match ubuntu user on Oracle Cloud VPS host
 # Remove existing node user first to free up UID 1000
 RUN userdel -r node && \
- useradd -m -u 1000 -s /bin/bash ai-gateway
+ useradd -m -u 1001 -s /bin/bash ai-gateway
 
 ENV HOME="/home/ai-gateway"
 ENV NPM_CONFIG_PREFIX=/home/ai-gateway/.npm-global
