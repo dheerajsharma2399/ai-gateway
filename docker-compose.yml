@@ -75,13 +75,13 @@ services:
 
 
     volumes:
-      - /home/ubuntu/agents/claude:/home/ai-gateway/.claude
-      - /home/ubuntu/agents/9router:/home/ai-gateway/.9router
-      - /home/ubuntu/agents/openchamber:/home/ai-gateway/.config/openchamber
-      - /home/ubuntu/agents/opencode-config:/home/ai-gateway/.config/opencode
-      - /home/ubuntu/agents/opencode:/home/ai-gateway/.local/share/opencode
-      - /home/ubuntu/agents/claude-code-ui:/home/ai-gateway/.claude-code-ui
-      - /home/ubuntu/agents/workspace:/workspace
+      - /home/ubuntu/ai-gateway/claude:/home/ai-gateway/.claude
+      - /home/ubuntu/ai-gateway/9router:/home/ai-gateway/.9router
+      - /home/ubuntu/ai-gateway/openchamber:/home/ai-gateway/.config/openchamber
+      - /home/ubuntu/ai-gateway/opencode-config:/home/ai-gateway/.config/opencode
+      - /home/ubuntu/ai-gateway/opencode:/home/ai-gateway/.local/share/opencode
+      - /home/ubuntu/ai-gateway/claude-code-ui:/home/ai-gateway/.claude-code-ui
+      - /home/ubuntu/ai-gateway/workspace:/workspace
 
     environment:
       # ── OpenChamber ──────────────────────────────────────────────────────────
