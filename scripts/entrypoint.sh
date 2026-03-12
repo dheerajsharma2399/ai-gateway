@@ -56,17 +56,22 @@ fi
 # oh-my-opencode is installed globally; register it in opencode.json on first run
 OPENCODE_CONFIG_FILE="${OPENCODE_CONFIG_DIR}/opencode.json"
 mkdir -p "${OPENCODE_CONFIG_DIR}"
-if [ ! -f "${OPENCODE_CONFIG_FILE}" ]; then
-  echo '{}' > "${OPENCODE_CONFIG_FILE}"
-fi
-# Inject plugin entry (idempotent: only adds if not already present)
-if command -v jq >/dev/null 2>&1; then
-  jq 'if (.plugin // []) | index("oh-my-opencode") == null
-      then .plugin = ((.plugin // []) + ["oh-my-opencode"])
-      else . end' \
-    "${OPENCODE_CONFIG_FILE}" > "${OPENCODE_CONFIG_FILE}.tmp" && \
-    mv "${OPENCODE_CONFIG_FILE}.tmp" "${OPENCODE_CONFIG_FILE}"
-  echo "[entrypoint] oh-my-opencode plugin enabled in opencode.json"
+if [ ! -w "${OPENCODE_CONFIG_DIR}" ]; then
+  echo "[entrypoint] warning: ${OPENCODE_CONFIG_DIR} is not writable; skipping oh-my-opencode config injection"
+elif [ ! -f "${OPENCODE_CONFIG_FILE}" ] && ! echo '{}' > "${OPENCODE_CONFIG_FILE}"; then
+  echo "[entrypoint] warning: failed to create ${OPENCODE_CONFIG_FILE}; skipping oh-my-opencode config injection"
+elif command -v jq >/dev/null 2>&1; then
+  # Inject plugin entry (idempotent: only adds if not already present)
+  if jq 'if (.plugin // []) | index("oh-my-opencode") == null
+        then .plugin = ((.plugin // []) + ["oh-my-opencode"])
+        else . end' \
+      "${OPENCODE_CONFIG_FILE}" > "${OPENCODE_CONFIG_FILE}.tmp" && \
+      mv "${OPENCODE_CONFIG_FILE}.tmp" "${OPENCODE_CONFIG_FILE}"; then
+    echo "[entrypoint] oh-my-opencode plugin enabled in opencode.json"
+  else
+    echo "[entrypoint] warning: failed to update ${OPENCODE_CONFIG_FILE}; skipping oh-my-opencode config injection"
+    rm -f "${OPENCODE_CONFIG_FILE}.tmp"
+  fi
 fi
 
 # --- OpenChamber Args ---

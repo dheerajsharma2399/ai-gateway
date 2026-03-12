@@ -25,6 +25,7 @@ services:
     container_name: ai-gateway
     restart: unless-stopped
     platform: linux/arm64
+    user: root
 
     # Tailscale-only access: bind services to localhost on the host.
     # Access via host Tailscale routing/proxy, not public Traefik.
