@@ -52,6 +52,9 @@ if [ -f "${HOME}/.mcp.json.template" ] && [ ! -f "${HOME}/.mcp.json" ]; then
   cp "${HOME}/.mcp.json.template" "${HOME}/.mcp.json"
 fi
 
+# --- Git Safe Directory (fix 'dubious ownership' on volume-mounted workspaces) ---
+git config --global --add safe.directory '*' 2>/dev/null || true
+
 # --- OpenCode Setup & LiteLLM Injection ---
 OPENCODE_CONFIG_FILE="${OPENCODE_CONFIG_DIR}/opencode.json"
 mkdir -p "${OPENCODE_CONFIG_DIR}"
