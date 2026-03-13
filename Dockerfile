@@ -90,7 +90,12 @@ RUN mkdir -p /home/ai-gateway/workspaces \
   /home/ai-gateway/.claude-code-ui \
   /home/ai-gateway/.cache/ms-playwright \
   /home/ai-gateway/.cache/opencode && \
-  chown -R ai-gateway:ai-gateway /home/ai-gateway
+  chown -R ai-gateway:ai-gateway /home/ai-gateway && \
+  ln -sf /home/ai-gateway/.npm-global/bin/opencode /usr/local/bin/opencode && \
+  ln -sf /home/ai-gateway/.npm-global/bin/claude /usr/local/bin/claude && \
+  ln -sf /home/ai-gateway/.npm-global/bin/9router /usr/local/bin/9router && \
+  ln -sf /home/ai-gateway/.npm-global/bin/task-master /usr/local/bin/task-master && \
+  ln -sf /home/ai-gateway/.npm-global/bin/openchamber /usr/local/bin/openchamber
 
 USER ai-gateway
 

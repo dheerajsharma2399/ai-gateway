@@ -64,7 +64,12 @@ echo "[entrypoint] User: $(id)"
 echo "[entrypoint] Node environment: $(node -v)"
 echo "[entrypoint] Working directory: $(pwd)"
 echo "[entrypoint] Checking binary permissions..."
-ls -la $(which node) $(which opencode) $(which claude) 2>/dev/null || echo "[entrypoint] warning: some binaries not in PATH"
+ls -la $(which node) $(which opencode) $(which claude) $(which task-master) $(which 9router) 2>/dev/null || echo "[entrypoint] warning: some binaries not in PATH"
+
+# --- 9router Config Validation ---
+if [ ! -f "${HOME}/.9router/db.json" ]; then
+  echo "[entrypoint] warning: 9router config not found at ${HOME}/.9router/db.json. Auth and models may be missing."
+fi
 
 # --- OpenCode Setup & LiteLLM Injection ---
 OPENCODE_CONFIG_FILE="${OPENCODE_CONFIG_DIR}/opencode.json"
