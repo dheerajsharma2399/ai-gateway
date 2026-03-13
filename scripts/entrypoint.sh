@@ -173,23 +173,16 @@ export PORT="${CLAUDEUI_PORT}"
 export HOST="0.0.0.0"
 
 # Fix for Claude Code UI: it expects the SDK at a specific nested path when installed globally
-CLAUDE_UI_INTERNAL_SDK_DIR="${HOME}/.npm-global/lib/node_modules/@siteboon/claude-code-ui/node_modules/@anthropic-ai/claude-agent-sdk"
+CLAUDE_UI_INTERNAL_SDK_PARENT="${HOME}/.npm-global/lib/node_modules/@siteboon/claude-code-ui/node_modules/@anthropic-ai"
+CLAUDE_UI_INTERNAL_SDK_DIR="${CLAUDE_UI_INTERNAL_SDK_PARENT}/claude-agent-sdk"
 GLOBAL_CLAUDE_SDK_DIR="${HOME}/.npm-global/lib/node_modules/@anthropic-ai/claude-agent-sdk"
 
-# Determine the actual cli.js location
-# It might be at the root of the sdk, or in dist/cli.js, or even in the claude-code package
-FOUND_CLI_JS=$(find "${GLOBAL_CLAUDE_SDK_DIR}" -name "cli.js" | head -n 1)
-if [ -z "${FOUND_CLI_JS}" ]; then
-  # Fallback: maybe it's in @anthropic-ai/claude-code
-  FOUND_CLI_JS=$(find "${HOME}/.npm-global/lib/node_modules/@anthropic-ai/claude-code" -name "cli.js" | head -n 1)
-fi
-
-if [ -n "${FOUND_CLI_JS}" ]; then
-  echo "[entrypoint] Found Claude CLI at ${FOUND_CLI_JS}. Symlinking for UI compatibility..."
-  mkdir -p "${CLAUDE_UI_INTERNAL_SDK_DIR}"
-  ln -sf "${FOUND_CLI_JS}" "${CLAUDE_UI_INTERNAL_SDK_DIR}/cli.js"
+if [ -d "${GLOBAL_CLAUDE_SDK_DIR}" ]; then
+  echo "[entrypoint] Symlinking global Claude SDK for UI compatibility..."
+  mkdir -p "${CLAUDE_UI_INTERNAL_SDK_PARENT}"
+  ln -sf "${GLOBAL_CLAUDE_SDK_DIR}" "${CLAUDE_UI_INTERNAL_SDK_DIR}"
 else
-  echo "[entrypoint] warning: could not find cli.js for Claude Code UI"
+  echo "[entrypoint] warning: could not find global Claude SDK at ${GLOBAL_CLAUDE_SDK_DIR}"
 fi
 
 claude-code-ui > "${OPENCODE_CONFIG_DIR}/claude-ui.log" 2>&1 &
