@@ -5,3 +5,5 @@ build/
 .DS_Store
 *.local
 .env
+opencode-agents/opencode.json
+.claude/settings.local.json
