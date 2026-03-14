@@ -52,11 +52,10 @@ WORKDIR /home/ai-gateway
 
 # Install all CLI tools globally
 # opencode-ai → `opencode` CLI
-# @anthropic/claude-code → `claude` CLI
 # @openchamber/web → `openchamber` web server
 # oh-my-opencode → opencode plugin
 # 9router → local AI endpoint proxy
-# task-master-ai → `task-master-mcp` server
+# @ai-sdk/openai-compatible → OpenAI-compatible provider for LiteLLM
 # playwright → browser automation CLI + MCP
 # Set up NPM global directory
 RUN npm config set prefix /home/ai-gateway/.npm-global && \
@@ -69,13 +68,9 @@ RUN npm config set prefix /home/ai-gateway/.npm-global && \
 RUN --mount=type=cache,target=/home/ai-gateway/.npm,uid=1000,gid=1000 \
   npm install -g --prefer-offline --no-audit --no-fund --loglevel=error \
   opencode-ai@latest \
-  @anthropic-ai/claude-code@latest \
-  @anthropic-ai/claude-agent-sdk@latest \
-  @siteboon/claude-code-ui@latest \
   @openchamber/web@latest \
   oh-my-opencode@latest \
   9router@latest \
-  task-master-ai@latest \
   @ai-sdk/openai-compatible@latest \
   playwright@latest
 
@@ -84,17 +79,12 @@ RUN npx playwright install --with-deps chromium
 
 # Create required directories and fix cache permissions while still root
 RUN mkdir -p /home/ai-gateway/workspaces \
-  /home/ai-gateway/.claude \
-  /home/ai-gateway/.taskmaster \
   /home/ai-gateway/.config/opencode \
-  /home/ai-gateway/.claude-code-ui \
   /home/ai-gateway/.cache/ms-playwright \
   /home/ai-gateway/.cache/opencode && \
   chown -R ai-gateway:ai-gateway /home/ai-gateway && \
   ln -sf /home/ai-gateway/.npm-global/bin/opencode /usr/local/bin/opencode && \
-  ln -sf /home/ai-gateway/.npm-global/bin/claude /usr/local/bin/claude && \
   ln -sf /home/ai-gateway/.npm-global/bin/9router /usr/local/bin/9router && \
-  ln -sf /home/ai-gateway/.npm-global/bin/task-master /usr/local/bin/task-master && \
   ln -sf /home/ai-gateway/.npm-global/bin/openchamber /usr/local/bin/openchamber
 
 USER ai-gateway
@@ -105,6 +95,6 @@ COPY --chmod=644 .mcp.json /home/ai-gateway/.mcp.json.template
 # Copy entrypoint script
 COPY --chmod=755 scripts/entrypoint.sh /app/entrypoint.sh
 
-EXPOSE 3010 3011
+EXPOSE 3010
 
 ENTRYPOINT ["/app/entrypoint.sh"]

@@ -44,11 +44,6 @@ fi
 echo "[entrypoint] SSH public key:"
 cat "${SSH_PUBLIC_KEY_PATH}"
 
-# --- Claude Code Setup ---
-echo "[entrypoint] checking Claude Code..."
-if [ ! -f "${HOME}/.claude/settings.json" ]; then
-  echo "[entrypoint] Claude Code not authenticated. Run: docker exec -it ai-gateway claude"
-fi
 
 # --- MCP Config Setup ---
 if [ -f "${HOME}/.mcp.json.template" ] && [ ! -f "${HOME}/.mcp.json" ]; then
@@ -64,7 +59,7 @@ echo "[entrypoint] User: $(id)"
 echo "[entrypoint] Node environment: $(node -v)"
 echo "[entrypoint] Working directory: $(pwd)"
 echo "[entrypoint] Checking binary permissions..."
-ls -la $(which node) $(which opencode) $(which claude) $(which task-master) $(which 9router) 2>/dev/null || echo "[entrypoint] warning: some binaries not in PATH"
+ls -la $(which node) $(which opencode) $(which 9router) 2>/dev/null || echo "[entrypoint] warning: some binaries not in PATH"
 
 # --- 9router Config Validation ---
 if [ ! -f "${HOME}/.9router/db.json" ]; then
@@ -169,30 +164,6 @@ if [ -n "${CF_TUNNEL:-}" ] && [ "${CF_TUNNEL:-false}" != "false" ]; then
   esac
 fi
 
-# --- Start ClaudeCodeUI in background ---
-CLAUDEUI_PORT="${CLAUDEUI_PORT:-3011}"
-echo "[entrypoint] starting ClaudeCodeUI on port ${CLAUDEUI_PORT}..."
-
-# Run ClaudeCodeUI in background
-export PORT="${CLAUDEUI_PORT}"
-export HOST="0.0.0.0"
-
-# Fix for Claude Code UI: it expects the SDK at a specific nested path when installed globally
-CLAUDE_UI_INTERNAL_SDK_PARENT="${HOME}/.npm-global/lib/node_modules/@siteboon/claude-code-ui/node_modules/@anthropic-ai"
-CLAUDE_UI_INTERNAL_SDK_DIR="${CLAUDE_UI_INTERNAL_SDK_PARENT}/claude-agent-sdk"
-GLOBAL_CLAUDE_SDK_DIR="${HOME}/.npm-global/lib/node_modules/@anthropic-ai/claude-agent-sdk"
-
-if [ -d "${GLOBAL_CLAUDE_SDK_DIR}" ]; then
-  echo "[entrypoint] Symlinking global Claude SDK for UI compatibility..."
-  mkdir -p "${CLAUDE_UI_INTERNAL_SDK_PARENT}"
-  ln -sf "${GLOBAL_CLAUDE_SDK_DIR}" "${CLAUDE_UI_INTERNAL_SDK_DIR}"
-else
-  echo "[entrypoint] warning: could not find global Claude SDK at ${GLOBAL_CLAUDE_SDK_DIR}"
-fi
-
-claude-code-ui > "${OPENCODE_CONFIG_DIR}/claude-ui.log" 2>&1 &
-CLAUDEUI_PID=$!
-echo "[entrypoint] ClaudeCodeUI started (PID: ${CLAUDEUI_PID})"
 
 # --- Start OpenChamber ---
 echo "[entrypoint] starting OpenChamber..."
@@ -204,11 +175,6 @@ fi
 # Define graceful shutdown function for ALL tools
 cleanup() {
   echo "[entrypoint] Received stop signal. Beginning graceful shutdown of all processes..."
-
-  if [ -n "${CLAUDEUI_PID:-}" ]; then
-    echo "[entrypoint] Stopping ClaudeCodeUI (PID: $CLAUDEUI_PID)..."
-    kill -TERM "$CLAUDEUI_PID" 2>/dev/null || true
-  fi
 
   if [ -n "${NINE_ROUTER_PID:-}" ]; then
     echo "[entrypoint] Stopping 9router (PID: $NINE_ROUTER_PID)..."
@@ -223,7 +189,6 @@ cleanup() {
   # Also nuke any rogue orphaned openchamber/opencode processes running under this user just in case
   pkill -TERM -f openchamber 2>/dev/null || true
   pkill -TERM -f opencode 2>/dev/null || true
-  pkill -TERM -f claude-code-ui 2>/dev/null || true
   pkill -TERM -f 9router 2>/dev/null || true
 
   echo "[entrypoint] Graceful shutdown complete."
