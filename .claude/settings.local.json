@@ -1,0 +1,11 @@
+{
+  "enabledMcpjsonServers": [
+    "task-master",
+    "playwright"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)"
+    ]
+  }
+}

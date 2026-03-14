@@ -3,12 +3,9 @@
 #
 # Services:
 #   OpenChamber WebUI (opencode.mooh.me → port 7802) — browser UI for OpenCode
-#   Claude Code UI   (claude.mooh.me   → port 3011) — Claude Code web interface
 #
 # Data layout on VPS:
 #   /home/ubuntu/agents/
-#     ├── claude/          → Claude Code auth
-#     ├── 9router/         → 9router auth + settings (`db.json`)
 #     ├── openchamber/     → OpenChamber config
 #     ├── opencode-config/ → OpenCode config
 #     ├── opencode/        → OpenCode data
@@ -30,7 +27,6 @@ services:
     # Also expose services through Traefik domain routing on dokploy-network.
     ports:
       - "127.0.0.1:7802:7802"
-      - "127.0.0.1:3011:3011"
       - "127.0.0.1:20128:20128"
 
     extra_hosts:
@@ -49,16 +45,6 @@ services:
       - "traefik.http.routers.openchamber-http.middlewares=redirect-to-https@file"
       - "traefik.http.routers.openchamber-http.service=openchamber-svc"
       - "traefik.http.services.openchamber-svc.loadbalancer.server.port=7802"
-      - "traefik.http.routers.claudeui.rule=Host(`${CLAUDEUI_DOMAIN:-claude.mooh.me}`)"
-      - "traefik.http.routers.claudeui.entrypoints=websecure"
-      - "traefik.http.routers.claudeui.tls=true"
-      - "traefik.http.routers.claudeui.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.claudeui.service=claudeui-svc"
-      - "traefik.http.routers.claudeui-http.rule=Host(`${CLAUDEUI_DOMAIN:-claude.mooh.me}`)"
-      - "traefik.http.routers.claudeui-http.entrypoints=web"
-      - "traefik.http.routers.claudeui-http.middlewares=redirect-to-https@file"
-      - "traefik.http.routers.claudeui-http.service=claudeui-svc"
-      - "traefik.http.services.claudeui-svc.loadbalancer.server.port=3011"
       - "traefik.http.routers.ninerouter.rule=Host(`${NINETROUTER_DOMAIN:-kilo.mooh.me}`)"
       - "traefik.http.routers.ninerouter.entrypoints=websecure"
       - "traefik.http.routers.ninerouter.tls=true"
@@ -75,12 +61,11 @@ services:
 
 
     volumes:
-      - /home/ubuntu/ai-gateway/claude:/home/ai-gateway/.claude
       - /home/ubuntu/ai-gateway/9router:/home/ai-gateway/.9router
       - /home/ubuntu/ai-gateway/openchamber:/home/ai-gateway/.config/openchamber
       - /home/ubuntu/ai-gateway/opencode-config:/home/ai-gateway/.config/opencode
       - /home/ubuntu/ai-gateway/opencode:/home/ai-gateway/.local/share/opencode
-      - /home/ubuntu/ai-gateway/claude-code-ui:/home/ai-gateway/.claude-code-ui
+      - /home/ubuntu/ai-gateway/workspace:/workspace
       - /home/ubuntu/ai-gateway/workspace:/workspace
 
     environment:
@@ -92,20 +77,10 @@ services:
       NINE_ROUTER_ENABLED: ${NINE_ROUTER_ENABLED:-true}
       NINE_ROUTER_PORT: ${NINE_ROUTER_PORT:-20128}
 
-      # ── Claude Code UI ─────────────────────────────────────────────────────────────────────────────
-      CLAUDEUI_PORT: "3011"
-      PORT: "3011"
-      DATABASE_PATH: /home/ai-gateway/.claude-code-ui/auth.db
-      HOST: "0.0.0.0"
-
       # ── LiteLLM proxy — all providers route through here ─────────────────────
       LITELLM_BASE_URL: ${LITELLM_BASE_URL}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       LITELLM_API_KEY: ${LITELLM_API_KEY}
-
-      # Anthropic (Claude Code uses this) → LiteLLM
-      ANTHROPIC_BASE_URL: ${LITELLM_BASE_URL}
-      ANTHROPIC_API_KEY: ${LITELLM_MASTER_KEY}
 
       # OpenAI-compatible (OpenCode) → LiteLLM
       OPENAI_BASE_URL: ${LITELLM_BASE_URL}/v1
@@ -125,9 +100,6 @@ services:
 
       # ── OpenCode default model ────────────────────────────────────────────────
       OPENCODE_DEFAULT_MODEL: ${OPENCODE_DEFAULT_MODEL:-drdash/anthropic/claude-3.5-sonnet}
-
-      # ── Claude Code model ─────────────────────────────────────────────────────
-      # CLAUDE_MODEL: sonnet
 
       # ── GitHub MCP server ─────────────────────────────────────────────────────
       GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN:-}
