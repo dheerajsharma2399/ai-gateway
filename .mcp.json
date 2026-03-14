@@ -1,13 +1,5 @@
 {
   "mcpServers": {
-    "task-master": {
-      "command": "npx",
-      "args": ["-y", "task-master-ai"],
-      "env": {
-        "TASKMASTER_MODEL": "claude-code/sonnet",
-        "TASKMASTER_RESEARCH_MODEL": "claude-code/opus"
-      }
-    },
     "playwright": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-playwright"],

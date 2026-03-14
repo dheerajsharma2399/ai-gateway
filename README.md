@@ -1,14 +1,13 @@
 # AI Gateway
 
-A self-hosted AI development environment combining **OpenCode** + **Claude Code** + **ClaudeCodeUI** + **Task Master** + **Playwright** in a single Docker container.
+A self-hosted AI development environment combining **OpenCode** + **9Router** + **Playwright** in a single Docker container.
 
 ## Features
 
 - **OpenCode** - AI coding assistant (OpenCode CLI)
-- **Claude Code** - Anthropic's AI coding CLI
-- **ClaudeCodeUI** - Web UI for Claude Code
-- **Task Master** - MCP server for task management & PRD parsing
+- **9Router** - Local AI endpoint proxy
 - **Playwright** - Headless browser automation
+- **OpenChamber** - Web UI for OpenCode
 - **Cloudflare Tunnel** - Remote access via QR code
 
 ## Quick Start
@@ -28,24 +27,13 @@ docker compose up -d ai-gateway
 ### 3. Access
 
 - **OpenChamber UI:** `https://opencode.mooh.me` (or `http://localhost:7802` from host)
-- **ClaudeCodeUI:** `https://claude.mooh.me` (or `http://localhost:3011` from host)
-
-### 4. First-time Claude Code Auth
-
-```bash
-docker exec -it ai-gateway claude
-```
-
-Follow the Anthropic browser auth flow. The auth persists in the volume.
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OPENCHAMBER_DOMAIN` | OpenChamber domain for Traefik | `opencode.mooh.me` |
-| `CLAUDEUI_DOMAIN` | ClaudeCodeUI domain for Traefik | `claude.mooh.me` |
 | `OPENCHAMBER_PORT` | OpenChamber UI port | `7802` |
-| `CLAUDEUI_PORT` | ClaudeCodeUI port | `3011` |
 | `UI_PASSWORD` | OpenChamber UI password | - |
 | `LITELLM_BASE_URL` | LiteLLM proxy URL | `http://litellm:4000` |
 | `LITELLM_MASTER_KEY` | LiteLLM master key | - |
@@ -62,10 +50,6 @@ The container includes MCP servers pre-configured. Add this to your project's `.
 ```json
 {
   "mcpServers": {
-    "task-master": {
-      "command": "node",
-      "args": ["/home/ai-gateway/.npm-global/lib/node_modules/task-master-ai/dist/mcp-server.js"]
-    },
     "playwright": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-playwright"]
@@ -78,7 +62,6 @@ The container includes MCP servers pre-configured. Add this to your project's `.
 
 | Host Path | Container Path | Purpose |
 |-----------|----------------|---------|
-| `/home/ubuntu/agents/claude` | `/home/ai-gateway/.claude` | Claude Code auth |
 | `/home/ubuntu/agents/9router` | `/home/ai-gateway/.9router` | 9router auth/settings |
 | `/home/ubuntu/agents/openchamber` | `/home/ai-gateway/.config/openchamber` | OpenChamber config |
 | `/home/ubuntu/agents/opencode-config` | `/home/ai-gateway/.config/opencode` | OpenCode config |
@@ -88,11 +71,9 @@ The container includes MCP servers pre-configured. Add this to your project's `.
 ## Architecture
 
 ```
-Browser → OpenChamber (:7802) / ClaudeCodeUI (:3011)
+Browser → OpenChamber (:7802)
               │
               ├── OpenCode CLI
-              ├── Claude Code CLI
-              ├── Task Master MCP (on demand)
               ├── Playwright MCP (on demand)
               └── 9router (:20128, local)
 ```
@@ -103,11 +84,8 @@ Browser → OpenChamber (:7802) / ClaudeCodeUI (:3011)
 |-----------|-----|
 | OpenChamber | ~200MB |
 | OpenCode | ~200MB |
-| Claude Code | ~200MB |
-| ClaudeCodeUI | ~200MB |
-| Task Master MCP | ~100MB (on demand) |
 | Playwright Chromium | ~300-500MB per session |
-| **Total** | **~1.2-1.5GB** |
+| **Total** | **~700MB + browser** |
 
 ## VPS Deployment
 
@@ -141,4 +119,3 @@ docker compose logs -f ai-gateway
 ### Access
 
 - **OpenChamber UI**: http://localhost:7802
-- **ClaudeCodeUI**: http://localhost:3011
